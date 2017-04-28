@@ -21,9 +21,10 @@ var
 procedure setUpGraphList();
 procedure addNode(x, y, radius: integer; color: TColor; name: string);
 procedure deleteNode(nodeToDelete: TGraphList);
+procedure writeHoleGraphInFile(path: string);
 function getLastNode(): TGraphList;
 function getWayByNum(node: TGraphList; num: integer): string;
-function getDiractionByNum(node: TGraphList; num: integer): integer;
+function getDirectionByNum(node: TGraphList; num: integer): integer;
 function getWeightByNum(node: TGraphList; num: integer): integer;
 function getNumOfWays(node: TGraphList): integer;
 function getNodeByName(name: string): TGraphList;
@@ -58,28 +59,9 @@ function getLastNode(): TGraphList;
     result := graphList^.last;
   end;
 
-procedure deleteNode(nodeToDelete: TGraphList);
+procedure deleteWayByNum(node: TGraphList; num: integer);
   var
-    iterator: TGraphList;
-  begin
-    iterator := graphList^.next;
-    while ((iterator <> nil) and (nodeToDelete <> nil)) do begin
-      if (iterator = nodeToDelete) then begin
-        iterator^.prev^.next := iterator^.next;
-        if (iterator^.next <> nil) then
-          iterator^.next^.prev := iterator^.prev else
-            graphList^.last := iterator^.prev;
-        dispose(iterator);
-        break;
-      end;
-    iterator := iterator^.next;
-    end;
-  end;
-
-function getWayByNum(node: TGraphList; num: integer): string;
-  var
-    first: integer;
-    res: string;
+    first, last: integer;
   begin
     dec(num);
     first := 1;
@@ -88,32 +70,89 @@ function getWayByNum(node: TGraphList; num: integer): string;
         dec(num);
       inc(first);
     end;
-    //inc(first);
-    res := '';
-    while (node^.ways[first] <> ' ') do begin
-      res := res + node^.ways[first];
-      inc(first);
+    last := first;
+    while ((node^.ways[last] <> ',') and (last <= length(node^.ways))) do
+      inc(last);
+    delete(node^.ways, first - 1, last - 1);
+  end;
+
+procedure deleteNode(nodeToDelete: TGraphList);
+  var
+    iterator: TGraphList;
+    nameToDelete: string;
+    numOfWays: integer;
+  begin
+    if (nodeToDelete <> nil) then begin
+      nameToDelete := nodeToDelete^.name;
+      iterator := graphList^.next;
+      while (iterator <> nil) do begin
+        numOfWays := getNumOfWays(iterator);
+          while (numOfWays > 0) do begin
+            if (nameToDelete = getWayByNum(iterator, numOfWays)) then begin
+              deleteWayByNum(iterator, numOfWays);
+            end;
+            dec(numOfWays);
+          end;
+        iterator := iterator^.next;
+      end;
+      iterator := graphList^.next;
+      while (iterator <> nil) do begin
+        if (iterator = nodeToDelete) then begin
+          iterator^.prev^.next := iterator^.next;
+          if (iterator^.next <> nil) then
+            iterator^.next^.prev := iterator^.prev else
+              graphList^.last := iterator^.prev;
+          dispose(iterator);
+          break;
+        end;
+      iterator := iterator^.next;
+      end;
+    end;
+  end;
+
+function getWayByNum(node: TGraphList; num: integer): string;
+  var
+    first: integer;
+    res: string;
+  begin
+    if (node <> nil) then begin
+      dec(num);
+      first := 1;
+      while (num >= 0) do begin
+        if (node^.ways[first] = ',') then
+          dec(num);
+        inc(first);
+      end;
+      res := '';
+      while (node^.ways[first] <> ' ') do begin
+        res := res + node^.ways[first];
+        inc(first);
+      end;
     end;
     result := res;
   end;
 
-function getDiractionByNum(node: TGraphList; num: integer): integer;
+function getDirectionByNum(node: TGraphList; num: integer): integer;
   var
     first: integer;
     res: string;
   begin
     dec(num);
-    first := 2;
-    while (num > 0) do begin
-      if (node^.ways[first] = ',') then
-        dec(num);
+    first := 1;
+    if (node <> nil) then begin
+      if (node <> nil) then begin
+        while (num >= 0) do begin
+          if (node^.ways[first] = ',') then
+            dec(num);
+          inc(first);
+        end;
+        res := '';
+        if (node^.ways[first+1] = ' ') then first := first + 2 else
+          first := first + 3;
+        res := res + node^.ways[first];
+        result := strtoint(res);
+      end;
     end;
-    inc(first);
-    res := '';
-    if (node^.ways[first+1] = ' ') then first := first + 2 else
-      first := first + 3;
-    res := res + node^.ways[first];
-    result := strtoint(res);
   end;
 
 function getNodeByName(name: string): TGraphList;
@@ -165,4 +204,23 @@ function getNumOfWays(node: TGraphList): integer;
     result := numOfWays;
   end;
 
+procedure writeHoleGraphInFile(path: string);
+  var
+    graphFile: TextFile;
+    iterator: TGraphList;
+  begin
+    assignFile(graphFile, path);
+    rewrite(graphFile);
+  iterator := graphList^.next;
+  while (iterator <> nil) do begin
+    writeln(graphFile, iterator^.name);
+    writeln(graphFile, iterator^.ways);
+    writeln(graphFile, inttostr(iterator^.x));
+    writeln(graphFile, inttostr(iterator^.y));
+    writeln(graphFile, inttostr(iterator^.radius));
+    writeln(graphFile, iterator^.color);
+    iterator := iterator^.next;
+  end;
+  closeFile(graphFile);
+  end;
 end.

@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, StdCtrls, ColorGrd, Unit2;
+  Dialogs, ExtCtrls, StdCtrls, ColorGrd, Math, Unit2;
 
 type
   TForm1 = class(TForm)
@@ -22,6 +22,8 @@ type
     RadioGroup4: TRadioGroup;
     Label5: TLabel;
     RadioGroup5: TRadioGroup;
+    Button3: TButton;
+    Button4: TButton;
     procedure Image1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure Button1Click(Sender: TObject);
@@ -31,6 +33,8 @@ type
       Y: Integer);
     procedure Image1MouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -39,7 +43,7 @@ type
 
 var
   Form1: TForm1;
-  num, letter: integer;
+  num, enLetter, ruLetter: integer;
   tempNode: TGraphList;
   isDown: boolean;
 
@@ -70,8 +74,12 @@ function getName(): string;
       inc(num);
     end;
     if (Form1.RadioGroup5.ItemIndex = 1) then begin
-      result := chr(ord('A') + letter);
-      inc(letter);
+      result := chr(ord('A') + enLetter);
+      inc(enLetter);
+    end;
+    if (Form1.RadioGroup5.ItemIndex = 2) then begin
+      result := chr(ord('А') + ruLetter);
+      inc(ruLetter);
     end;
   end;
 
@@ -81,7 +89,7 @@ procedure drawNode(node: TGraphList);
     name: string;
     color: TColor;
   begin
-    //inicialisation
+    //initialisation
     x := node^.x;
     y := node^.y;
     radius := node^.radius;
@@ -130,11 +138,11 @@ procedure drawNode(node: TGraphList);
     end;
   end;
 
-procedure graphicConnection(node1, node2: TGraphList);
+procedure graphicConnection(node1, node2: TGraphList; placeOfNode: integer);
   const
     WIDTH = 2;
   var
-    temp, x1, x2, y1, y2, r1, r2, fromX, fromY, toX, toY, deltaX1, deltaX2, deltaY1, deltaY2: integer;
+    temp, x1, x2, y1, y2, r1, r2, fromX, fromY, toX, toY, deltaX1, deltaX2, deltaY1, deltaY2, tempX, tempY, direction: integer;
     sinA: real;
   begin
     if ((node1 <> nil) and (node2 <> nil) and (node1 <> node2)) then begin
@@ -144,6 +152,9 @@ procedure graphicConnection(node1, node2: TGraphList);
       x2 := node2^.x;
       y2 := node2^.y;
       r2 := node2^.radius;
+      {if ((getDirectionByNum(node1, placeOfNode) = 1) and (getDirectionByNum(node2, placeOfNode) = 2)) then direction := 1;
+      if ((getDirectionByNum(node1, placeOfNode) = 2) and (getDirectionByNum(node2, placeOfNode) = 1)) then direction := 2;
+      if ((getDirectionByNum(node1, placeOfNode) = 0) and (getDirectionByNum(node2, placeOfNode) = 0)) then direction := 0; }
       if (x1 > x2) then begin
         temp := x1;
         x1 := x2;
@@ -154,6 +165,10 @@ procedure graphicConnection(node1, node2: TGraphList);
         temp := r1;
         r1 := r2;
         r2 := temp;
+        {if (direction <> 0) then begin
+          if (direction = 2) then direction := 1 else
+            direction := 2;
+        end;}
       end;
       sinA := (y1-y2)/ sqrt(sqr(x2-x1) + sqr(y2-y1));
       deltaY1 := round(r1*sinA);
@@ -169,6 +184,30 @@ procedure graphicConnection(node1, node2: TGraphList);
         pen.Width := WIDTH;
         moveTo(fromX, fromY);
         lineTo(toX, toY);
+        tempX := toX;
+        tempY := toY;
+        {if (direction = 2) then begin
+          toX := fromX + round(15*(cos(PI/4+arcsin(sinA))));
+          toY := fromY - round(15*(sin(PI/4+arcsin(sinA))));
+          moveTo(fromX, fromY);
+          lineTo(toX, toY);
+          toX := fromX + round(15*(cos(-PI/4+arcsin(sinA))));
+          toY := fromY - round(15*(sin(-PI/4+arcsin(sinA))));
+          moveTo(fromX, fromY);
+          lineTo(toX, toY);
+        end;
+        if (direction = 1) then begin
+          fromX := tempX;
+          fromY := tempY;
+          toX := fromX - round(15*(cos(PI/4+arcsin(sinA))));
+          toY := fromY + round(15*(sin(PI/4+arcsin(sinA))));
+          moveTo(fromX, fromY);
+          lineTo(toX, toY);
+          toX := fromX - round(15*(cos(-PI/4+arcsin(sinA))));
+          toY := fromY + round(15*(sin(-PI/4+arcsin(sinA))));
+          moveTo(fromX, fromY);
+          lineTo(toX, toY);
+        end;}
       end;
     end;
   end;
@@ -245,7 +284,7 @@ procedure drawHoleGraphConnection();
     while (iterator <> nil) do begin
       numOfWays := getNumOfWays(iterator);
       while (numOfWays > 0) do begin
-        graphicConnection(iterator, getNodeByName(getWayByNum(iterator, numOfWays)));
+        graphicConnection(iterator, getNodeByName(getWayByNum(iterator, numOfWays)), numOfWays);
         dec(numOfWays);
       end;
       iterator := iterator^.next;
@@ -287,46 +326,73 @@ procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
     end;
   end;
 
+procedure countNodesDegree();
+  var
+    iterator: TGraphList;
+    degree: integer;
+  begin
+    iterator := graphList^.next;
+    with Form1.Image1.canvas do begin
+      while (iterator <> nil) do begin
+        degree := getNumOfWays(iterator);
+        font.Size := 10;
+        font.Color := clBlack;
+        textOut(iterator^.x - 3, iterator^.y - iterator^.radius - 15, inttostr(degree));
+        iterator := iterator^.next;
+      end;
+    end;
+  end;
+
 procedure TForm1.Button1Click(Sender: TObject);
-begin
-  num := 0;
-  letter := 0;
-  clear();
-end;
+  begin
+    num := 0;
+    enLetter := 0;
+    ruLetter := 0;
+    clear();
+  end;
 
 procedure TForm1.FormCreate(Sender: TObject);
-begin
-  clear();
-  setUpGraphList();
-end;
+  begin
+    clear();
+    setUpGraphList();
+  end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-begin
-  drawHoleGraph();
-end;
+  begin
+    drawHoleGraph();
+  end;
 
 procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
   var
     node: TGraphList;
-begin
-  if (isDown) then begin
-    node := getNodeByCoordinates(x, y);
-    if (node <> nil) then begin
-      //brightThisNode(node);
-      node^.x := x;
-      node^.y := y;
-      clear();
-      drawHoleGraph();
-      //brightThisNode(node);
+  begin
+    if (isDown) then begin
+      node := getNodeByCoordinates(x, y);
+      if (node <> nil) then begin
+        node^.x := x;
+        node^.y := y;
+        clear();
+        drawHoleGraph();
+      end;
     end;
   end;
-end;
 
 procedure TForm1.Image1MouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
-begin
-  isDown := false;
-end;
+  begin
+    isDown := false;
+  end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+  begin
+    countNodesDegree();
+  end;
+
+procedure TForm1.Button4Click(Sender: TObject);
+  begin
+    writeHoleGraphInFile('graph.gr');
+    showMessage('Файл сохранен как graph.gr');
+  end;
 
 end.
