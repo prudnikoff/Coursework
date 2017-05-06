@@ -3,12 +3,12 @@ unit Unit2;
 interface
 
 uses
-  SysUtils, Graphics; {Unit1 in 'Unit1.pas';}
+  SysUtils, Graphics;
 
 type
   TGraphList = ^elem;
   elem = record
-    next, prev, last: TgraphList;
+    next, prev, last: TGraphList;
     x, y, radius: integer;
     name: string;
     color: TColor;
@@ -17,17 +17,24 @@ type
 
 var
   graphList: TGraphList;
+  numFile, enLetterFile, ruLetterFile: integer;
 
 procedure setUpGraphList();
-procedure addNode(x, y, radius: integer; color: TColor; name: string);
+procedure addNode(x, y, radius: integer; color: TColor; name, ways: string);
 procedure deleteNode(nodeToDelete: TGraphList);
-procedure writeHoleGraphInFile(path: string);
+procedure writeHoleGraphInFile(path: string; num, enLetter, ruLetter: integer);
 function getLastNode(): TGraphList;
 function getWayByNum(node: TGraphList; num: integer): string;
 function getDirectionByNum(node: TGraphList; num: integer): integer;
 function getWeightByNum(node: TGraphList; num: integer): integer;
 function getNumOfWays(node: TGraphList): integer;
 function getNodeByName(name: string): TGraphList;
+function isExist(node1, node2: TGraphList): boolean;
+procedure deleteHoleGraph();
+procedure parseFromFile(path: string);
+function getNum(): integer;
+function getEnLetter(): integer;
+function getRuLetter(): integer;
 
 implementation
 
@@ -38,7 +45,7 @@ procedure setUpGraphList();
     graphList^.last := graphList;
   end;
 
-procedure addNode(x, y, radius: integer; color: TColor; name: string);
+procedure addNode(x, y, radius: integer; color: TColor; name, ways: string);
   var
     newElem: TGraphList;
   begin
@@ -48,6 +55,7 @@ procedure addNode(x, y, radius: integer; color: TColor; name: string);
     newElem^.radius := radius;
     newElem^.color := color;
     newElem^.name := name;
+    newElem^.ways := ways;
     newElem^.next := nil;
     newElem^.prev := graphList^.last;
     graphList^.last^.next := newElem;
@@ -137,21 +145,19 @@ function getDirectionByNum(node: TGraphList; num: integer): integer;
     first: integer;
     res: string;
   begin
-    dec(num);
-    first := 1;
     if (node <> nil) then begin
-      if (node <> nil) then begin
-        while (num >= 0) do begin
-          if (node^.ways[first] = ',') then
-            dec(num);
-          inc(first);
-        end;
-        res := '';
-        if (node^.ways[first+1] = ' ') then first := first + 2 else
-          first := first + 3;
-        res := res + node^.ways[first];
-        result := strtoint(res);
+      dec(num);
+      first := 1;
+      while (num >= 0) do begin
+        if (node^.ways[first] = ',') then
+          dec(num);
+        inc(first);
       end;
+      res := '';
+      if (node^.ways[first+1] = ' ') then first := first + 2 else
+        first := first + 3;
+      res := res + node^.ways[first];
+      result := strtoint(res);
     end;
   end;
 
@@ -173,21 +179,23 @@ function getWeightByNum(node: TGraphList; num: integer): integer;
     first: integer;
     res: string;
   begin
-    dec(num);
-    first := 2;
-    while (num > 0) do begin
-      if (node^.ways[first] = ',') then
-        dec(num);
+    if (node <> nil) then begin
+      dec(num);
+      first := 1;
+      while (num >= 0) do begin
+        if (node^.ways[first] = ',') then
+          dec(num);
+        inc(first);
+      end;
+      res := '';
+      if (node^.ways[first+1] = ' ') then first := first + 4 else
+        first := first + 5;
+      while ((node^.ways[first] <> ',') and (first <= length(node^.ways))) do begin
+        res := res + node^.ways[first];
+        inc(first);
+      end;
+      result := strtoint(res);
     end;
-    inc(first);
-    res := '';
-    if ((node^.ways[first+3] = ',') and (first <= length(node^.ways))) then first := first + 4 else
-      first := first + 5;
-    while (node^.ways[first] <> ' ') do begin
-      res := res + node^.ways[first];
-      inc(first);
-    end;
-    result := strtoint(res);
   end;
 
 function getNumOfWays(node: TGraphList): integer;
@@ -204,7 +212,29 @@ function getNumOfWays(node: TGraphList): integer;
     result := numOfWays;
   end;
 
-procedure writeHoleGraphInFile(path: string);
+function isExist(node1, node2: TGraphList): boolean;
+  begin
+    if ((node1 <> nil) and (node2 <> nil) and (node1 <> node2)) then begin
+      if ((pos(node1^.name, node2^.ways) > 0) and (pos(node2^.name, node1^.ways) > 0)) then result := true else
+        result := false;
+    end;
+  end;
+
+function countAllNodes(): string;
+  var
+    iterator: TGraphList;
+    counter: integer;
+  begin
+    iterator := graphList^.next;
+    counter := 0;
+    while (iterator <> nil) do begin
+      inc(counter);
+      iterator := iterator^.next;
+    end;
+    result := inttostr(counter);
+  end;
+
+procedure writeHoleGraphInFile(path: string; num, enLetter, ruLetter: integer);
   var
     graphFile: TextFile;
     iterator: TGraphList;
@@ -212,6 +242,10 @@ procedure writeHoleGraphInFile(path: string);
     assignFile(graphFile, path);
     rewrite(graphFile);
   iterator := graphList^.next;
+  writeln(graphFile, countAllNodes());
+  writeln(graphFile, num);
+  writeln(graphFile, enLetter);
+  writeln(graphFile, ruLetter);
   while (iterator <> nil) do begin
     writeln(graphFile, iterator^.name);
     writeln(graphFile, iterator^.ways);
@@ -223,4 +257,61 @@ procedure writeHoleGraphInFile(path: string);
   end;
   closeFile(graphFile);
   end;
+
+procedure deleteHoleGraph();
+  var
+    tempNode, iterator: TGraphList;
+  begin
+    iterator := graphList^.next;
+    while (iterator <> nil) do begin
+      tempNode := iterator^.next;
+      dispose(iterator);
+      iterator := tempNode;
+    end;
+    graphList^.next := nil;
+  end;
+
+procedure parseFromFile(path: string);
+  var
+    graphFile: TextFile;
+    numOfNodes, x, y, radius: integer;
+    numOfNodesStr, name, ways: string;
+    color: TColor;
+  begin
+    setUpGraphList();
+    assignFile(graphFile, path);
+    reset(graphFile);
+    readln(graphFile, numOfNodesStr);
+    readln(graphFile, numFile);
+    readln(graphFile, enLetterFile);
+    readln(graphFile, ruLetterFile);
+    numOfNodes := strtoint(numOfNodesStr);
+    while (numOfNodes > 0) do begin
+      readln(graphFile, name);
+      readln(graphFile, ways);
+      readln(graphFile, x);
+      readln(graphFile, y);
+      readln(graphFile, radius);
+      readln(graphFile, color);
+      addNode(x, y, radius, color, name, ways);
+      dec(numOfNodes);
+    end;
+    closeFile(graphFile);
+  end;
+
+function getNum(): integer;
+  begin
+    result := numFile;
+  end;
+
+function getEnLetter(): integer;
+  begin
+    result := EnLetterFile;
+  end;
+
+function getRuLetter(): integer;
+  begin
+    result := ruLetterFile;
+  end;
+
 end.

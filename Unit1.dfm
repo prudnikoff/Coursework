@@ -1,22 +1,26 @@
 object Form1: TForm1
-  Left = 162
-  Top = 89
-  Width = 1205
-  Height = 696
+  Left = -8
+  Top = -8
+  BiDiMode = bdLeftToRight
+  BorderStyle = bsSingle
   Caption = 'Form1'
-  Color = clBtnFace
+  ClientHeight = 705
+  ClientWidth = 1366
+  Color = clSkyBlue
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  ParentBiDiMode = False
+  WindowState = wsMaximized
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object Image1: TImage
     Left = 16
-    Top = 8
+    Top = 16
     Width = 1001
     Height = 673
     OnMouseDown = Image1MouseDown

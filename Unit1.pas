@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, StdCtrls, ColorGrd, Math, Unit2;
+  Dialogs, ExtCtrls, StdCtrls, ColorGrd, Math, Unit2, jpeg;
 
 type
   TForm1 = class(TForm)
@@ -89,7 +89,6 @@ procedure drawNode(node: TGraphList);
     name: string;
     color: TColor;
   begin
-    //initialisation
     x := node^.x;
     y := node^.y;
     radius := node^.radius;
@@ -138,39 +137,31 @@ procedure drawNode(node: TGraphList);
     end;
   end;
 
-procedure graphicConnection(node1, node2: TGraphList; placeOfNode: integer);
+procedure graphicConnection(node1, node2: TGraphList; direction, weight: integer);
   const
     WIDTH = 2;
   var
-    temp, x1, x2, y1, y2, r1, r2, fromX, fromY, toX, toY, deltaX1, deltaX2, deltaY1, deltaY2, tempX, tempY, direction: integer;
+    x1, x2, y1, y2, r1, r2, fromX, fromY, toX, toY, deltaX1, deltaX2: integer;
+    deltaY1, deltaY2, tempX, tempY, yForWeight: integer;
     sinA: real;
+    temp: TGraphList;
   begin
     if ((node1 <> nil) and (node2 <> nil) and (node1 <> node2)) then begin
+      if (node1^.x > node2^.x) then begin
+        temp := node1;
+        node1 := node2;
+        node2 := temp;
+        if (direction <> 0) then begin
+          if (direction = 1) then direction := 2 else direction := 1;
+        end;
+      end;
       x1 := node1^.x;
       y1 := node1^.y;
       r1 := node1^.radius;
       x2 := node2^.x;
       y2 := node2^.y;
       r2 := node2^.radius;
-      {if ((getDirectionByNum(node1, placeOfNode) = 1) and (getDirectionByNum(node2, placeOfNode) = 2)) then direction := 1;
-      if ((getDirectionByNum(node1, placeOfNode) = 2) and (getDirectionByNum(node2, placeOfNode) = 1)) then direction := 2;
-      if ((getDirectionByNum(node1, placeOfNode) = 0) and (getDirectionByNum(node2, placeOfNode) = 0)) then direction := 0; }
-      if (x1 > x2) then begin
-        temp := x1;
-        x1 := x2;
-        x2 := temp;
-        temp := y1;
-        y1 := y2;
-        y2 := temp;
-        temp := r1;
-        r1 := r2;
-        r2 := temp;
-        {if (direction <> 0) then begin
-          if (direction = 2) then direction := 1 else
-            direction := 2;
-        end;}
-      end;
-      sinA := (y1-y2)/ sqrt(sqr(x2-x1) + sqr(y2-y1));
+      sinA := (y1-y2)/ sqrt(sqr(x2-x1) + sqr(y2-y1) + 1);
       deltaY1 := round(r1*sinA);
       deltaY2 := round(r2*sinA);
       fromY := y1 - deltaY1;
@@ -179,35 +170,47 @@ procedure graphicConnection(node1, node2: TGraphList; placeOfNode: integer);
       deltaX2 := round(sqrt(sqr(r2) - sqr(deltaY2)));
       fromX := x1 + deltaX1;
       toX := x2 - deltaX2;
+      yForWeight := min(node1^.y, node2^.y);
+      yForWeight := yForWeight + round(abs(node1^.y - node2^.y)/2);
       with Form1.Image1.canvas do begin
+        //draw connection
         pen.Color := clSilver;
         pen.Width := WIDTH;
         moveTo(fromX, fromY);
         lineTo(toX, toY);
+        //draw weight
+        font.Color := clBlack;
+        font.Size := 12;
+        brush.Color := clWhite;
+        brush.Style := bsSolid;
+        if (weight <> 1) then
+          textOut(node1^.x + round((node2^.x - node1^.x)/2) - 4*length(inttostr(weight)),
+          yForWeight - 9, inttostr(weight));
+        //draw direction
         tempX := toX;
         tempY := toY;
-        {if (direction = 2) then begin
-          toX := fromX + round(15*(cos(PI/4+arcsin(sinA))));
-          toY := fromY - round(15*(sin(PI/4+arcsin(sinA))));
+        if (direction = 2) then begin
+          toX := fromX + round(11*(cos(PI/4+arcsin(sinA))));
+          toY := fromY - round(11*(sin(PI/4+arcsin(sinA))));
           moveTo(fromX, fromY);
           lineTo(toX, toY);
-          toX := fromX + round(15*(cos(-PI/4+arcsin(sinA))));
-          toY := fromY - round(15*(sin(-PI/4+arcsin(sinA))));
+          toX := fromX + round(11*(cos(-PI/4+arcsin(sinA))));
+          toY := fromY - round(11*(sin(-PI/4+arcsin(sinA))));
           moveTo(fromX, fromY);
           lineTo(toX, toY);
         end;
         if (direction = 1) then begin
           fromX := tempX;
           fromY := tempY;
-          toX := fromX - round(15*(cos(PI/4+arcsin(sinA))));
-          toY := fromY + round(15*(sin(PI/4+arcsin(sinA))));
+          toX := fromX - round(11*(cos(PI/4+arcsin(sinA))));
+          toY := fromY + round(11*(sin(PI/4+arcsin(sinA))));
           moveTo(fromX, fromY);
           lineTo(toX, toY);
-          toX := fromX - round(15*(cos(-PI/4+arcsin(sinA))));
-          toY := fromY + round(15*(sin(-PI/4+arcsin(sinA))));
+          toX := fromX - round(11*(cos(-PI/4+arcsin(sinA))));
+          toY := fromY + round(11*(sin(-PI/4+arcsin(sinA))));
           moveTo(fromX, fromY);
           lineTo(toX, toY);
-        end;}
+        end;
       end;
     end;
   end;
@@ -256,9 +259,14 @@ procedure brightThisNode(node: TGraphList);
 
 procedure mathConnection(node1, node2: TGraphList);
   var
-    info1, info2: string;
+    info1, info2, weight: string;
   begin
-    if ((node1 <> nil) and (node2 <> nil) and (node1 <> node2)) then begin
+    if ((node1 <> nil) and (node2 <> nil) and (not isExist(node1, node2))) then begin
+      weight := '1';
+      if (Form1.RadioGroup4.ItemIndex = 0) then begin
+        weight := inputBox('Grapher', 'Введите вес пути', '');
+      end;
+      if (weight = '') then weight := '1';
       info1 := ',' + node2^.name + ' ';
       info2 := ',' + node1^.name + ' ';
       if (Form1.RadioGroup3.ItemIndex = 1) then begin
@@ -268,8 +276,8 @@ procedure mathConnection(node1, node2: TGraphList);
         info1 := info1 + '1 ';
         info2 := info2 + '2 ';
       end;
-      info1 := info1 + '0';
-      info2 := info2 + '0';
+      info1 := info1 + weight;
+      info2 := info2 + weight;
       node1^.ways := node1^.ways + info1;
       node2^.ways := node2^.ways + info2;
     end;
@@ -284,7 +292,8 @@ procedure drawHoleGraphConnection();
     while (iterator <> nil) do begin
       numOfWays := getNumOfWays(iterator);
       while (numOfWays > 0) do begin
-        graphicConnection(iterator, getNodeByName(getWayByNum(iterator, numOfWays)), numOfWays);
+        graphicConnection(iterator, getNodeByName(getWayByNum(iterator, numOfWays)),
+        getDirectionByNum(iterator, numOfWays), getWeightByNum(iterator, numOfWays));
         dec(numOfWays);
       end;
       iterator := iterator^.next;
@@ -302,7 +311,7 @@ procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
   begin
     isDown := false;
     if (Form1.RadioGroup2.ItemIndex = 0) then begin
-      addNode(x, y, getRadius(), Form1.ColorGrid1.ForegroundColor, getName());
+      addNode(x, y, getRadius(), Form1.ColorGrid1.ForegroundColor, getName(), '');
       drawNode(getLastNode());
     end;
     if (Form1.RadioGroup2.ItemIndex = 1) then begin
@@ -348,6 +357,7 @@ procedure TForm1.Button1Click(Sender: TObject);
     num := 0;
     enLetter := 0;
     ruLetter := 0;
+    deleteHoleGraph();
     clear();
   end;
 
@@ -359,7 +369,12 @@ procedure TForm1.FormCreate(Sender: TObject);
 
 procedure TForm1.Button2Click(Sender: TObject);
   begin
+    clear();
+    parseFromFile('graph.gr');
     drawHoleGraph();
+    num := getNum();
+    enLetter := getEnLetter();
+    ruLetter := getRuLetter();
   end;
 
 procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -391,7 +406,7 @@ procedure TForm1.Button3Click(Sender: TObject);
 
 procedure TForm1.Button4Click(Sender: TObject);
   begin
-    writeHoleGraphInFile('graph.gr');
+    writeHoleGraphInFile('graph.gr', num, enLetter, ruLetter);
     showMessage('Файл сохранен как graph.gr');
   end;
 
