@@ -7,34 +7,50 @@ uses
   Dialogs, ExtCtrls, StdCtrls, ColorGrd, Math, Unit2, jpeg;
 
 type
-  TForm1 = class(TForm)
-    Image1: TImage;
-    Label2: TLabel;
-    Button1: TButton;
-    RadioGroup1: TRadioGroup;
-    RadioGroup2: TRadioGroup;
-    Label1: TLabel;
-    ColorGrid1: TColorGrid;
-    Label3: TLabel;
-    Button2: TButton;
-    Label4: TLabel;
-    RadioGroup3: TRadioGroup;
-    RadioGroup4: TRadioGroup;
-    Label5: TLabel;
-    RadioGroup5: TRadioGroup;
-    Button3: TButton;
-    Button4: TButton;
-    procedure Image1MouseDown(Sender: TObject; Button: TMouseButton;
+  TmainForm = class(TForm)
+    mainImage: TImage;
+    nodesSizeLabel: TLabel;
+    clearButton: TButton;
+    sizeRadioGroup: TRadioGroup;
+    editRadioGroup: TRadioGroup;
+    editLabel: TLabel;
+    mainColorGrid: TColorGrid;
+    colorLabel: TLabel;
+    openButton: TButton;
+    graphTypeLabel: TLabel;
+    orientationRadioGroup: TRadioGroup;
+    weightRadioGroup: TRadioGroup;
+    namingLabel: TLabel;
+    namingRadioGroup: TRadioGroup;
+    saveButton: TButton;
+    openDialog: TOpenDialog;
+    saveDialog: TSaveDialog;
+    buildComboBox: TComboBox;
+    buildLabel: TLabel;
+    buildButton: TButton;
+    countLabel: TLabel;
+    countComboBox: TComboBox;
+    countButton: TButton;
+    shortestWayButton: TButton;
+    nodesSearchButton: TButton;
+    backgroundColorBox: TColorBox;
+    backgroundLabel: TLabel;
+    procedure mainImageMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure Button1Click(Sender: TObject);
+    procedure clearButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
-    procedure Image1MouseMove(Sender: TObject; Shift: TShiftState; X,
+    procedure openButtonClick(Sender: TObject);
+    procedure mainImageMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
-    procedure Image1MouseUp(Sender: TObject; Button: TMouseButton;
+    procedure mainImageMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure Button3Click(Sender: TObject);
-    procedure Button4Click(Sender: TObject);
+    procedure saveButtonClick(Sender: TObject);
+    procedure countButtonClick(Sender: TObject);
+    procedure buildButtonClick(Sender: TObject);
+    procedure shortestWayButtonClick(Sender: TObject);
+    procedure nodesSearchButtonClick(Sender: TObject);
+    procedure backgroundColorBoxChange(Sender: TObject);
+    //procedure Button7Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -42,8 +58,7 @@ type
   end;
 
 var
-  Form1: TForm1;
-  num, enLetter, ruLetter: integer;
+  mainForm: TmainForm;
   tempNode: TGraphList;
   isDown: boolean;
 
@@ -53,33 +68,45 @@ implementation
 
 function getRadius(): integer;
   begin
-    if (Form1.RadioGroup1.ItemIndex = 0) then result := 10;
-    if (Form1.RadioGroup1.ItemIndex = 1) then result := 18;
-    if (Form1.RadioGroup1.ItemIndex = 2) then result := 26;
+    if (mainForm.sizeRadioGroup.ItemIndex = 0) then result := 10;
+    if (mainForm.sizeRadioGroup.ItemIndex = 1) then result := 18;
+    if (mainForm.sizeRadioGroup.ItemIndex = 2) then result := 26;
   end;
 
 procedure clear();
   begin
-    with Form1.Image1.Canvas do begin
-      brush.Color := clWhite;
-      pen.Color := clWhite;
-      rectangle(0, 0, Form1.Image1.Width, Form1.Image1.Height);
+    with mainForm.mainImage.Canvas do begin
+      brush.Color := mainForm.backGroundColorBox.Selected;
+      pen.Color := mainForm.backGroundColorBox.Selected;
+      rectangle(0, 0, mainForm.mainImage.Width, mainForm.mainImage.Height);
     end;
   end;
 
 function getName(): string;
+  var
+    num, enLetter, ruLetter: integer;
   begin
-    if (Form1.RadioGroup5.ItemIndex = 0) then begin
+    num := 0;
+    enLetter := 0;
+    ruLetter := 0;
+    if (mainForm.namingRadioGroup.ItemIndex = 0) then begin
+      while (isNameExist(inttostr(num))) do inc(num);
       result := inttostr(num);
       inc(num);
     end;
-    if (Form1.RadioGroup5.ItemIndex = 1) then begin
+    if (mainForm.namingRadioGroup.ItemIndex = 1) then begin
       result := chr(ord('A') + enLetter);
-      inc(enLetter);
+      while (isNameExist(result)) do begin
+        inc(enLetter);
+        result := chr(ord('A') + enLetter);
+      end;
     end;
-    if (Form1.RadioGroup5.ItemIndex = 2) then begin
+    if (mainForm.namingRadioGroup.ItemIndex = 2) then begin
       result := chr(ord('А') + ruLetter);
-      inc(ruLetter);
+      while (isNameExist(result)) do begin
+        inc(ruLetter);
+        result := chr(ord('A') + ruLetter);
+      end;
     end;
   end;
 
@@ -96,48 +123,50 @@ procedure drawNode(node: TGraphList);
     color := node^.color;
     case radius of
       10: begin
-            if (length(name) > 1) then begin
-              equetionX := 6;
-              equetionY := 7;
-            end else begin
-              equetionX := 3;
-              equetionY := 7;
-            end;
+            equetionX := 6;
+            equetionY := 7;
           end;
       18: begin
-            if (length(name) > 1) then begin
-              equetionX := 11;
-              equetiony := 12;
-            end else begin
-              equetionX := 6;
-              equetionY := 12;
-            end;
+            equetionX := 11;
+            equetiony := 12;
           end;
       26: begin
-            if (length(name) > 1) then begin
-              equetionX := 16;
-              equetionY := 17;
-            end else begin
-              equetionX := 8;
-              equetionY := 17;
-            end;
+            equetionX := 16;
+            equetionY := 17;
           end;
     end;
-    with Form1.Image1.canvas do begin
+    with mainForm.mainImage.canvas do begin
       pen.Color := color;
       brush.Color := color;
       ellipse(x - radius, y - radius, x + radius, y + radius);
       font.Size := radius*6 div 7;
       font.Color := clWhite;
-      textOut(x - equetionX, y - equetionY, name);
       pen.color := clBlue;
-      pen.width := 2;
+      pen.width := 3;
       brush.Style := bsClear;
       ellipse(x - radius, y - radius, x + radius, y + radius);
+      brush.Style := bsSolid;
+      brush.Color := color;
+      textOut(x - trunc(equetionX*length(name)/2), y - equetionY, uppercase(name));
     end;
   end;
 
-procedure graphicConnection(node1, node2: TGraphList; direction, weight: integer);
+procedure renameNode(node: TGraphList);
+  var
+    newName: string;
+  begin
+    if (node <> nil) then begin
+      newName := inputBox('Grapher', 'Введите имя вершины', node^.name);
+      if (isNameExist(newName) or (pos('@', newName) > 0)) then showMessage('Данное имя уже существует!') else begin
+        if (newName <> '') then begin
+          replaceAllWays(node^.name, newName);
+          node^.name := newName;
+        end;
+      end;
+    end;
+  end;
+
+procedure graphicConnection(node1, node2: TGraphList; direction: integer; weight: string);
   const
     WIDTH = 2;
   var
@@ -172,7 +201,7 @@ procedure graphicConnection(node1, node2: TGraphList; direction, weight: integer
       toX := x2 - deltaX2;
       yForWeight := min(node1^.y, node2^.y);
       yForWeight := yForWeight + round(abs(node1^.y - node2^.y)/2);
-      with Form1.Image1.canvas do begin
+      with mainForm.mainImage.canvas do begin
         //draw connection
         pen.Color := clSilver;
         pen.Width := WIDTH;
@@ -181,11 +210,11 @@ procedure graphicConnection(node1, node2: TGraphList; direction, weight: integer
         //draw weight
         font.Color := clBlack;
         font.Size := 12;
-        brush.Color := clWhite;
+        brush.Color := mainForm.backGroundColorBox.Selected;
         brush.Style := bsSolid;
-        if (weight <> 1) then
-          textOut(node1^.x + round((node2^.x - node1^.x)/2) - 4*length(inttostr(weight)),
-          yForWeight - 9, inttostr(weight));
+        if (weight <> '1') then
+          textOut(node1^.x + round((node2^.x - node1^.x)/2) - 4*length(weight),
+          yForWeight - 9, weight);
         //draw direction
         tempX := toX;
         tempY := toY;
@@ -245,11 +274,11 @@ function getNodeByCoordinates(x, y: integer): TGraphList;
       result := nil;
   end;
 
-procedure brightThisNode(node: TGraphList);
+procedure brightThisNode(node: TGraphList; color: TColor);
   begin
     if (node <> nil) then begin
-      with Form1.Image1.canvas do begin
-        pen.color := clYellow;
+      with mainForm.mainImage.canvas do begin
+        pen.color := color;
         pen.width := 3;
         brush.Style := bsClear;
         ellipse(node^.x - node^.radius, node^.y - node^.radius, node^.x + node^.radius, node^.y + node^.radius);
@@ -260,16 +289,27 @@ procedure brightThisNode(node: TGraphList);
 procedure mathConnection(node1, node2: TGraphList);
   var
     info1, info2, weight: string;
+    exit: boolean;
   begin
-    if ((node1 <> nil) and (node2 <> nil) and (not isExist(node1, node2))) then begin
+    if ((node1 <> nil) and (node2 <> nil)) then begin
+      if (isWayExist(node1, node2)) then begin
+        deleteWayByName(node1, node2^.name);
+        deleteWayByName(node2, node1^.name);
+      end;
       weight := '1';
-      if (Form1.RadioGroup4.ItemIndex = 0) then begin
+      if (mainForm.weightRadioGroup.ItemIndex = 0) then begin
         weight := inputBox('Grapher', 'Введите вес пути', '');
+        if (pos('.', weight) > 0) then weight[pos('.', weight)] := ',';
+        if (not checkWeight(weight)) then begin
+          showMessage('Некорректный ввод!');
+          mathConnection(node1, node2);
+          weight := '';
+        end;
       end;
       if (weight = '') then weight := '1';
-      info1 := ',' + node2^.name + ' ';
-      info2 := ',' + node1^.name + ' ';
-      if (Form1.RadioGroup3.ItemIndex = 1) then begin
+      info1 := '@' + '*' + node2^.name + '*';
+      info2 := '@' + '*' + node1^.name + '*';
+      if (mainForm.orientationRadioGroup.ItemIndex = 1) then begin
         info1 := info1 + '0 ';
         info2 := info2 + '0 ';
       end else begin
@@ -306,18 +346,18 @@ procedure drawHoleGraph();
     drawHoleGraphConnection();
   end;
 
-procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
+procedure TmainForm.mainImageMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
   begin
     isDown := false;
-    if (Form1.RadioGroup2.ItemIndex = 0) then begin
-      addNode(x, y, getRadius(), Form1.ColorGrid1.ForegroundColor, getName(), '');
+    if (mainForm.editRadioGroup.ItemIndex = 0) then begin
+      addNode(x, y, getRadius(), mainForm.mainColorGrid.ForegroundColor, getName(), '');
       drawNode(getLastNode());
     end;
-    if (Form1.RadioGroup2.ItemIndex = 1) then begin
+    if (mainForm.editRadioGroup.ItemIndex = 1) then begin
       if (tempNode = nil) then begin
         tempNode := getNodeByCoordinates(x, y);
-        brightThisNode(getNodeByCoordinates(x, y));
+        brightThisNode(getNodeByCoordinates(x, y), clYellow);
       end else begin
         mathConnection(tempNode, getNodeByCoordinates(x, y));
         clear();
@@ -325,10 +365,15 @@ procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
         tempNode := nil;
       end;
     end;
-    if (Form1.RadioGroup2.ItemIndex = 2) then begin
+    if (mainForm.editRadioGroup.ItemIndex = 2) then begin
       isDown := true;
     end;
-    if (Form1.RadioGroup2.ItemIndex = 3) then begin
+    if (mainForm.editRadioGroup.ItemIndex = 3) then begin
+      renameNode(getNodeByCoordinates(x, y));
+      clear();
+      drawHoleGraph();
+    end;
+    if (mainForm.editRadioGroup.ItemIndex = 4) then begin
       deleteNode(getNodeByCoordinates(x, y));
       clear();
       drawHoleGraph();
@@ -341,9 +386,10 @@ procedure countNodesDegree();
     degree: integer;
   begin
     iterator := graphList^.next;
-    with Form1.Image1.canvas do begin
+    with mainForm.mainImage.canvas do begin
       while (iterator <> nil) do begin
         degree := getNumOfWays(iterator);
+        brush.Style := bsClear;
         font.Size := 10;
         font.Color := clBlack;
         textOut(iterator^.x - 3, iterator^.y - iterator^.radius - 15, inttostr(degree));
@@ -352,32 +398,38 @@ procedure countNodesDegree();
     end;
   end;
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure buildGraph(source: string);
   begin
-    num := 0;
-    enLetter := 0;
-    ruLetter := 0;
+    clear();
+    parseFromFile(source);
+    fileName := source;
+    drawHoleGraph();
+  end;
+
+procedure TmainForm.clearButtonClick(Sender: TObject);
+  begin
     deleteHoleGraph();
     clear();
   end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TmainForm.FormCreate(Sender: TObject);
   begin
     clear();
     setUpGraphList();
+    fileName := 'MyGraph.gr';
   end;
 
-procedure TForm1.Button2Click(Sender: TObject);
+procedure TmainForm.openButtonClick(Sender: TObject);
   begin
-    clear();
-    parseFromFile('graph.gr');
-    drawHoleGraph();
-    num := getNum();
-    enLetter := getEnLetter();
-    ruLetter := getRuLetter();
+    if openDialog.Execute then begin
+      clear();
+      parseFromFile(openDialog.FileName);
+      fileName := openDialog.FileName;
+      drawHoleGraph();
+    end;
   end;
 
-procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X,
+procedure TmainForm.mainImageMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
   var
     node: TGraphList;
@@ -393,21 +445,138 @@ procedure TForm1.Image1MouseMove(Sender: TObject; Shift: TShiftState; X,
     end;
   end;
 
-procedure TForm1.Image1MouseUp(Sender: TObject; Button: TMouseButton;
+procedure TmainForm.mainImageMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
   begin
     isDown := false;
   end;
 
-procedure TForm1.Button3Click(Sender: TObject);
+procedure TmainForm.saveButtonClick(Sender: TObject);
   begin
-    countNodesDegree();
+    saveDialog.FileName := fileName;
+    if saveDialog.Execute then begin
+      writeHoleGraphInFile(saveDialog.FileName);
+    end;
   end;
 
-procedure TForm1.Button4Click(Sender: TObject);
+function countGraphSize(): string;
+  var
+    ways: string;
+    graphSize, numOfWays: integer;
+    iterator: TGraphList;
   begin
-    writeHoleGraphInFile('graph.gr', num, enLetter, ruLetter);
-    showMessage('Файл сохранен как graph.gr');
+    iterator := graphList^.next;
+    ways := '';
+    graphSize := 0;
+    while (iterator <> nil) do begin
+      numOfWays := getNumOfWays(iterator);
+      while (numOfWays > 0) do begin
+        if (pos(getWayByNum(iterator, numOfWays), ways) <= 0) then inc(graphSize);
+        dec(numOfWays);
+      end;
+      ways := ways + iterator^.name;
+      iterator := iterator^.next;
+    end;
+    result := inttostr(graphSize);
+  end;
+
+function countRoundTime(): string;
+  var
+    ways: string;
+    numOfWays: integer;
+    holeTime: real;
+    iterator: TGraphList;
+  begin
+    iterator := graphList^.next;
+    ways := '';
+    holeTime := 0;
+    while (iterator <> nil) do begin
+      numOfWays := getNumOfWays(iterator);
+      while (numOfWays > 0) do begin
+        if (pos(getWayByNum(iterator, numOfWays), ways) <= 0) then
+          holeTime := holeTime + strtofloat(getWeightByNum(iterator, numOfWays));
+        dec(numOfWays);
+      end;
+      ways := ways + iterator^.name;
+      iterator := iterator^.next;
+    end;
+    result := floattostr(holeTime);
+  end;
+
+procedure TmainForm.countButtonClick(Sender: TObject);
+  begin
+    case countComboBox.ItemIndex of
+      0: countNodesDegree();
+      1: showMessage('Порядок графа равен ' + countAllNodes());
+      2: showMessage('Размер графа равен ' + countGraphSize());
+      3: showMessage('Время полного обхода равно ' + countRoundTime());
+    end;
+  end;
+
+procedure TmainForm.buildButtonClick(Sender: TObject);
+  var
+    buildName: string;
+  begin
+    buildName := ExtractFileDir(Application.ExeName) + '\Data\';
+    case buildComboBox.ItemIndex of
+      0: buildName := buildName + 'BinaryTree.gr';
+      1: buildName := buildName + 'Heap.gr';
+      2: buildName := buildName + 'Perceptron.gr';
+      3: buildName := buildName + 'MetroMap.gr';
+      4: buildName := buildName + 'ChemicalModel.gr';
+      5: buildName := buildName + 'Sociogram.gr';
+      6: buildName := buildName + 'Сonstellation.gr';
+    end;
+    if (buildName <> (ExtractFileDir(Application.ExeName) + '\Data\')) then
+      buildGraph(buildName);
+  end;
+
+procedure TmainForm.shortestWayButtonClick(Sender: TObject);
+  var
+    fromNode, toNode: string;
+    i: integer;
+  begin
+    clear();
+    drawHoleGraph();
+    fromNode := inputBox('Grapher', 'Введите имя начальной вершины', '');
+    toNode := inputBox('Grapher', 'Введите имя конечной вершины', '');
+    if (not (isNameExist(fromNode) and isNameExist(toNode))) then begin
+      showMessage('Вершины не найдены!');
+    end else begin
+      prepareToSearch(fromNode);
+      shortestWaySearch(getNodeByName(fromNode));
+      brightThisNode(getNodeByName(fromNode), clRed);
+      brightThisNode(getNodeByName(toNode), clRed);
+      if (getNodeByName(toNode)^.distance >= 1.7E37) then showMessage('Пути от ' + fromNode + ' до ' + toNode + ' не существует') else
+        showMessage('Кратчайший путь от ' + fromNode + ' до ' + toNode + ' равен ' + floattostr(getNodeByName(toNode)^.distance));
+    end;
+  end;
+
+procedure TmainForm.nodesSearchButtonClick(Sender: TObject);
+  var
+    nodeName: string;
+    foundNode: TGraphList;
+    i: integer;
+  begin
+    nodeName := inputBox('Grapher', 'Введите имя вершины', '');
+    foundNode := getNodeByName(nodeName);
+    if (foundNode = nil) then showMessage('Вершина не найдена') else begin
+      for i := 0 to 3 do begin
+        brightThisNode(foundNode, clRed);
+        mainForm.mainImage.Repaint;
+        sleep(400);
+        brightThisNode(foundNode, clBlue);
+        mainForm.mainImage.Repaint;
+        sleep(400);
+      end;
+      brightThisNode(foundNode, clRed);
+    end;
+  end;
+
+procedure TmainForm.backgroundColorBoxChange(Sender: TObject);
+  begin
+    clear();
+    drawHoleGraph();
   end;
 
 end.

@@ -1,0 +1,22 @@
+3
+3
+0
+0
+california
+,*san-diego 1 25,*san-francisco 2 325
+214
+367
+18
+8388736
+san-diego
+,*california 2 25,*san-francisco 1 125
+817
+75
+18
+8388736
+san-francisco
+,*san-diego 2 125,*california 1 325
+686
+608
+18
+8388736
