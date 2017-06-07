@@ -1,4 +1,4 @@
-unit Unit2;
+unit MathUnit;
 
 interface
 
@@ -9,7 +9,7 @@ type
   TGraphList = ^elem;
   elem = record
     next, prev, last: TGraphList;
-    x, y, radius: integer;
+    x, y, sx, sy, radius: integer;
     name: string;
     color: TColor;
     ways: string;
@@ -40,8 +40,9 @@ function countAllNodes(): string;
 function isNameExist(name: string): boolean;
 procedure replaceAllWays(oldName, newName: string);
 procedure prepareToSearch(fromNode: string);
-procedure shortestWaySearch(node: TGraphList);
+procedure waySearch(node: TGraphList);
 function checkWeight(weight: string): boolean;
+function getDegreeOfNode(node: TGraphList): string;
 
 implementation
 
@@ -51,7 +52,7 @@ procedure setUpGraphList();
     graphList^.next := nil;
     graphList^.last := graphList;
   end;
-
+//Добавление вершины в список
 procedure addNode(x, y, radius: integer; color: TColor; name, ways: string);
   var
     newElem: TGraphList;
@@ -59,6 +60,8 @@ procedure addNode(x, y, radius: integer; color: TColor; name, ways: string);
     new(newElem);
     newElem^.x := x;
     newElem^.y := y;
+    newElem^.sx := x;
+    newElem^.sy := y;
     newElem^.radius := radius;
     newElem^.color := color;
     newElem^.name := name;
@@ -68,12 +71,12 @@ procedure addNode(x, y, radius: integer; color: TColor; name, ways: string);
     graphList^.last^.next := newElem;
     graphList^.last := newElem;
   end;
-
+//Получение последней вершины
 function getLastNode(): TGraphList;
   begin
     result := graphList^.last;
   end;
-
+//Удаление вершины по номеру
 procedure deleteWayByNum(node: TGraphList; num: integer);
   var
     first, last: integer;
@@ -91,7 +94,7 @@ procedure deleteWayByNum(node: TGraphList; num: integer);
       inc(last);
     delete(node^.ways, first, last - first);
   end;
-
+//Удаление пути по имени
 procedure deleteWayByName(node: TGraphList; name: string);
   var
     first, last: integer;
@@ -104,7 +107,7 @@ procedure deleteWayByName(node: TGraphList; name: string);
       inc(last);
     delete(node^.ways, first, last - first);
   end;
-
+//Ззамена всех путей
 procedure replaceAllWays(oldName, newName: string);
   var
     iterator: TGraphList;
@@ -118,7 +121,7 @@ procedure replaceAllWays(oldName, newName: string);
       iterator := iterator^.next;
     end;
   end;
-
+//Удаление вершины
 procedure deleteNode(nodeToDelete: TGraphList);
   var
     iterator: TGraphList;
@@ -152,7 +155,7 @@ procedure deleteNode(nodeToDelete: TGraphList);
       end;
     end;
   end;
-
+//Получение пути по номеру
 function getWayByNum(node: TGraphList; num: integer): string;
   var
     first: integer;
@@ -175,7 +178,7 @@ function getWayByNum(node: TGraphList; num: integer): string;
     end;
     result := res;
   end;
-
+//Получение направления по номеру
 function getDirectionByNum(node: TGraphList; num: integer): integer;
   var
     first: integer;
@@ -199,7 +202,7 @@ function getDirectionByNum(node: TGraphList; num: integer): integer;
       result := strtoint(res);
     end;
   end;
-
+//Получение вершины по имени
 function getNodeByName(name: string): TGraphList;
   var
     iterator: TGraphList;
@@ -212,7 +215,7 @@ function getNodeByName(name: string): TGraphList;
       iterator := iterator^.next;
     end;
   end;
-
+//Получение веса по номеру
 function getWeightByNum(node: TGraphList; num: integer): string;
   var
     first: integer;
@@ -243,7 +246,7 @@ function getWeightByNum(node: TGraphList; num: integer): string;
       result := res;
     end;
   end;
-
+//Получение количества путей вершины
 function getNumOfWays(node: TGraphList): integer;
   var
     iterator, numOfWays: integer;
@@ -257,7 +260,22 @@ function getNumOfWays(node: TGraphList): integer;
     end;
     result := numOfWays;
   end;
-
+//Получение степени вершины
+function getDegreeOfNode(node: TGraphList): string;
+  var
+    degree, numOfWays: integer;
+  begin
+    degree := 0;
+    numOfWays := getNumOfWays(node);
+    while (numOfWays > 0) do begin
+      if ((getDirectionByNum(node, numOfWays) = 1)
+      or (getDirectionByNum(node, numOfWays) = 0)) then
+        inc(degree);
+      dec(numOfWays);
+    end;
+    result := inttostr(degree);
+  end;
+//Проверка существования пути
 function isWayExist(node1, node2: TGraphList): boolean;
   begin
     if ((node1 <> nil) and (node2 <> nil) and (node1 <> node2)) then begin
@@ -265,7 +283,7 @@ function isWayExist(node1, node2: TGraphList): boolean;
         result := false; 
     end;
   end;
-
+//Проверка существования имени
 function isNameExist(name: string): boolean;
   var
     iterator: TGraphList;
@@ -277,7 +295,7 @@ function isNameExist(name: string): boolean;
       iterator := iterator^.next;
     end;
   end;
-
+//Подсчет всех вершины
 function countAllNodes(): string;
   var
     iterator: TGraphList;
@@ -291,7 +309,7 @@ function countAllNodes(): string;
     end;
     result := inttostr(counter);
   end;
-
+//Запись полного графа в файл
 procedure writeHoleGraphInFile(path: string);
   var
     graphFile: TextFile;
@@ -312,7 +330,7 @@ procedure writeHoleGraphInFile(path: string);
     end;
     closeFile(graphFile);
   end;
-
+//Удалени графа целиком
 procedure deleteHoleGraph();
   var
     tempNode, iterator: TGraphList;
@@ -326,7 +344,7 @@ procedure deleteHoleGraph();
     graphList^.next := nil;
     graphList^.last := graphList;
   end;
-
+//Парсинг из файла
 procedure parseFromFile(path: string);
   var
     graphFile: TextFile;
@@ -351,7 +369,7 @@ procedure parseFromFile(path: string);
     end;
     closeFile(graphFile);
   end;
-
+//Подготовка к поиску кратчайшего пути
 procedure prepareToSearch(fromNode: string);
   var
     iterator: TGraphList;
@@ -364,7 +382,7 @@ procedure prepareToSearch(fromNode: string);
       iterator := iterator^.next;
     end;
   end;
-
+//Проверка введенного веса на корректность
 function checkWeight(weight: string): boolean;
   const
     rightNumbers = '0123456789,';
@@ -376,8 +394,8 @@ function checkWeight(weight: string): boolean;
       if (pos(weight[i], rightNumbers) <= 0) then result := false;
     end;
   end;
-
-procedure shortestWaySearch(node: TGraphList);
+//Поиск кратчайшего пути
+procedure waySearch(node: TGraphList);
   var
     numOfWays: integer;
     temp, minNode, iterator: TGraphList;
@@ -403,7 +421,7 @@ procedure shortestWaySearch(node: TGraphList);
       end;
       iterator := iterator^.next;
     end;
-    if (minNode <> nil) then shortestWaySearch(minNode);
+    if (minNode <> nil) then waySearch(minNode);
   end;
 
 end.

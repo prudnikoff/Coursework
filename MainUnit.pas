@@ -1,10 +1,10 @@
-unit Unit1;
+unit MainUnit;
 
 interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, StdCtrls, ColorGrd, Math, Unit2, jpeg;
+  Dialogs, ExtCtrls, StdCtrls, ColorGrd, Math, MathUnit;
 
 type
   TmainForm = class(TForm)
@@ -31,7 +31,6 @@ type
     countLabel: TLabel;
     countComboBox: TComboBox;
     countButton: TButton;
-    shortestWayButton: TButton;
     nodesSearchButton: TButton;
     backgroundColorBox: TColorBox;
     backgroundLabel: TLabel;
@@ -47,7 +46,6 @@ type
     procedure saveButtonClick(Sender: TObject);
     procedure countButtonClick(Sender: TObject);
     procedure buildButtonClick(Sender: TObject);
-    procedure shortestWayButtonClick(Sender: TObject);
     procedure nodesSearchButtonClick(Sender: TObject);
     procedure backgroundColorBoxChange(Sender: TObject);
     //procedure Button7Click(Sender: TObject);
@@ -61,18 +59,20 @@ var
   mainForm: TmainForm;
   tempNode: TGraphList;
   isDown: boolean;
+  dX, dY: integer;
 
 implementation
 
 {$R *.dfm}
 
+//Получение радиуса
 function getRadius(): integer;
   begin
     if (mainForm.sizeRadioGroup.ItemIndex = 0) then result := 10;
     if (mainForm.sizeRadioGroup.ItemIndex = 1) then result := 18;
     if (mainForm.sizeRadioGroup.ItemIndex = 2) then result := 26;
   end;
-
+//Очистка содержимого
 procedure clear();
   begin
     with mainForm.mainImage.Canvas do begin
@@ -81,7 +81,7 @@ procedure clear();
       rectangle(0, 0, mainForm.mainImage.Width, mainForm.mainImage.Height);
     end;
   end;
-
+//Получение имени
 function getName(): string;
   var
     num, enLetter, ruLetter: integer;
@@ -105,11 +105,11 @@ function getName(): string;
       result := chr(ord('А') + ruLetter);
       while (isNameExist(result)) do begin
         inc(ruLetter);
-        result := chr(ord('A') + ruLetter);
+        result := chr(ord('А') + ruLetter);
       end;
     end;
   end;
-
+//Рисование вершины
 procedure drawNode(node: TGraphList);
   var
     equetionX, equetionY, x, y, radius: integer;
@@ -150,7 +150,7 @@ procedure drawNode(node: TGraphList);
       textOut(x - trunc(equetionX*length(name)/2), y - equetionY, uppercase(name));
     end;
   end;
-
+//Переименование вершины
 procedure renameNode(node: TGraphList);
   var
     newName: string;
@@ -165,7 +165,7 @@ procedure renameNode(node: TGraphList);
       end;
     end;
   end;
-
+//Графическое соедениение
 procedure graphicConnection(node1, node2: TGraphList; direction: integer; weight: string);
   const
     WIDTH = 2;
@@ -243,7 +243,7 @@ procedure graphicConnection(node1, node2: TGraphList; direction: integer; weight
       end;
     end;
   end;
-
+//Рисование всех вершин графа
 procedure drawHoleGraphNodes();
   var
     iterator: TGraphList;
@@ -273,7 +273,7 @@ function getNodeByCoordinates(x, y: integer): TGraphList;
     if (not isFound) then
       result := nil;
   end;
-
+//Подстветка вершины
 procedure brightThisNode(node: TGraphList; color: TColor);
   begin
     if (node <> nil) then begin
@@ -285,7 +285,7 @@ procedure brightThisNode(node: TGraphList; color: TColor);
       end;
     end;
   end;
-
+//Математическое соединение
 procedure mathConnection(node1, node2: TGraphList);
   var
     info1, info2, weight: string;
@@ -298,7 +298,7 @@ procedure mathConnection(node1, node2: TGraphList);
       end;
       weight := '1';
       if (mainForm.weightRadioGroup.ItemIndex = 0) then begin
-        weight := inputBox('Grapher', 'Введите вес пути', '');
+        weight := inputBox('Grapher', 'Введите вес дуги', '');
         if (pos('.', weight) > 0) then weight[pos('.', weight)] := ',';
         if (not checkWeight(weight)) then begin
           showMessage('Некорректный ввод!');
@@ -322,7 +322,7 @@ procedure mathConnection(node1, node2: TGraphList);
       node2^.ways := node2^.ways + info2;
     end;
   end;
-
+//Рисование всех соединений
 procedure drawHoleGraphConnection();
   var
     iterator: TGraphList;
@@ -339,7 +339,7 @@ procedure drawHoleGraphConnection();
       iterator := iterator^.next;
     end;
   end;
-
+//Рисование графа целиком
 procedure drawHoleGraph();
   begin
     drawHoleGraphNodes();
@@ -367,6 +367,8 @@ procedure TmainForm.mainImageMouseDown(Sender: TObject; Button: TMouseButton;
     end;
     if (mainForm.editRadioGroup.ItemIndex = 2) then begin
       isDown := true;
+      dX := X;
+      dY := Y;
     end;
     if (mainForm.editRadioGroup.ItemIndex = 3) then begin
       renameNode(getNodeByCoordinates(x, y));
@@ -379,7 +381,7 @@ procedure TmainForm.mainImageMouseDown(Sender: TObject; Button: TMouseButton;
       drawHoleGraph();
     end;
   end;
-
+//Подсчет степеней вершин
 procedure countNodesDegree();
   var
     iterator: TGraphList;
@@ -387,17 +389,16 @@ procedure countNodesDegree();
   begin
     iterator := graphList^.next;
     with mainForm.mainImage.canvas do begin
+      brush.Style := bsClear;
+      font.Size := 10;
+      font.Color := clBlack;
       while (iterator <> nil) do begin
-        degree := getNumOfWays(iterator);
-        brush.Style := bsClear;
-        font.Size := 10;
-        font.Color := clBlack;
-        textOut(iterator^.x - 3, iterator^.y - iterator^.radius - 15, inttostr(degree));
+        textOut(iterator^.x - 3, iterator^.y - iterator^.radius - 15, getDegreeOfNode(iterator));
         iterator := iterator^.next;
       end;
     end;
   end;
-
+//Построение графа
 procedure buildGraph(source: string);
   begin
     clear();
@@ -416,6 +417,8 @@ procedure TmainForm.FormCreate(Sender: TObject);
   begin
     clear();
     setUpGraphList();
+    dX := 0;
+    dY := 0;
     fileName := 'MyGraph.gr';
   end;
 
@@ -427,6 +430,20 @@ procedure TmainForm.openButtonClick(Sender: TObject);
       fileName := openDialog.FileName;
       drawHoleGraph();
     end;
+  end;
+//Сдвиг всех вершин
+procedure shiftAllNodes(x, y: integer);
+  var
+    iterator: TGraphList;
+  begin
+    iterator := graphList^.next;
+    while (iterator <> nil) do begin
+      iterator^.x := iterator^.sx + x - dx;
+      iterator^.y := iterator^.sy + y - dy;
+      iterator := iterator^.next;
+    end;
+    clear();
+    drawHoleGraph();
   end;
 
 procedure TmainForm.mainImageMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -441,14 +458,24 @@ procedure TmainForm.mainImageMouseMove(Sender: TObject; Shift: TShiftState; X,
         node^.y := y;
         clear();
         drawHoleGraph();
-      end;
+      end else shiftAllNodes(x, y);
     end;
   end;
 
 procedure TmainForm.mainImageMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+  var
+    iterator: TGraphList;
   begin
     isDown := false;
+    dX := 0;
+    dY := 0;
+    iterator := graphList^.next;
+    while (iterator <> nil) do begin
+      iterator^.sx := iterator^.x;
+      iterator^.sy := iterator^.y;
+      iterator := iterator^.next;
+    end;
   end;
 
 procedure TmainForm.saveButtonClick(Sender: TObject);
@@ -458,7 +485,7 @@ procedure TmainForm.saveButtonClick(Sender: TObject);
       writeHoleGraphInFile(saveDialog.FileName);
     end;
   end;
-
+//Подстчет размера графа
 function countGraphSize(): string;
   var
     ways: string;
@@ -479,7 +506,7 @@ function countGraphSize(): string;
     end;
     result := inttostr(graphSize);
   end;
-
+//Расчет времени полного обхода
 function countRoundTime(): string;
   var
     ways: string;
@@ -502,14 +529,83 @@ function countRoundTime(): string;
     end;
     result := floattostr(holeTime);
   end;
+//Поиск центральной вершины
+procedure centralNodeSearch(action: integer);
+  var
+    iterator1, iterator2, center, farthestNode: TGraphList;
+    farthestWay, minFarthestWay: real;
+    name: string;
+  begin
+    iterator1 := graphList^.next;
+    center := nil;
+    minFarthestWay := 1.7E37;
+    while (iterator1 <> nil) do begin
+      prepareToSearch(iterator1^.name);
+      waySearch(iterator1);
+      iterator2 := graphList^.next;
+      name := iterator1^.name;
+      farthestNode := graphList^.next;
+      farthestWay := iterator2^.distance;
+      while (iterator2 <> nil) do begin
+        if (iterator2^.distance > farthestWay) then begin
+          farthestWay := iterator2^.distance;
+          farthestNode := iterator2;
+        end;
+        iterator2 := iterator2^.next;
+      end;
+      if (farthestWay < minFarthestWay) then begin
+        center := iterator1;
+        minFarthestWay := farthestWay;
+      end;
+      iterator1 := iterator1^.next;
+    end;
+    if (action = 1) then begin
+      if (minFarthestWay >= 1.7E37) then showMessage('Центральной вершины не существует') else
+        brightThisNode(center, clYellow);
+    end;
+    if (action = 2) then begin
+      if (minFarthestWay >= 1.7E37) then showMessage('Радиус графа равен бесконечности') else
+        showMessage('Радиус графа равен ' + floattostr(minFarthestWay))
+    end;
+  end;
+//Начало поиска кратчайшего пути
+procedure waySearchStart();
+  var
+    fromNode, toNode: string;
+    isBackWayExist: boolean;
+    i: integer;
+  begin
+    clear();
+    drawHoleGraph();
+    shortestWay := '';
+    fromNode := inputBox('Grapher', 'Введите имя начальной вершины', '');
+    toNode := inputBox('Grapher', 'Введите имя конечной вершины', '');
+    if (not (isNameExist(fromNode) and isNameExist(toNode))) then begin
+      showMessage('Вершины не найдены!');
+    end else begin
+      prepareToSearch(toNode);
+      waySearch(getNodeByName(toNode));
+      isBackWayExist := false;
+      if (getNodeByName(fromNode)^.distance <= 1.7E37) then isBackWayExist := true;
+      prepareToSearch(fromNode);
+      waySearch(getNodeByName(fromNode));
+      brightThisNode(getNodeByName(fromNode), clRed);
+      brightThisNode(getNodeByName(toNode), clRed);
+      if (getNodeByName(toNode)^.distance >= 1.7E37) then showMessage('Пути от ' + fromNode + ' до ' + toNode + ' не существует') else
+        showMessage('Кратчайший путь от ' + fromNode + ' до ' + toNode + ' равен ' + floattostr(getNodeByName(toNode)^.distance));
+    end;
+  end;
 
 procedure TmainForm.countButtonClick(Sender: TObject);
   begin
     case countComboBox.ItemIndex of
-      0: countNodesDegree();
-      1: showMessage('Порядок графа равен ' + countAllNodes());
-      2: showMessage('Размер графа равен ' + countGraphSize());
-      3: showMessage('Время полного обхода равно ' + countRoundTime());
+      0: waySearchStart();
+      1: countNodesDegree();
+      2: showMessage('Порядок графа равен ' + countAllNodes());
+      3: showMessage('Размер графа равен ' + countGraphSize());
+      4: showMessage('Время полного обхода равно ' + countRoundTime());
+      5: centralNodeSearch(1);
+      6: centralNodeSearch(2);
     end;
   end;
 
@@ -529,27 +625,6 @@ procedure TmainForm.buildButtonClick(Sender: TObject);
     end;
     if (buildName <> (ExtractFileDir(Application.ExeName) + '\Data\')) then
       buildGraph(buildName);
-  end;
-
-procedure TmainForm.shortestWayButtonClick(Sender: TObject);
-  var
-    fromNode, toNode: string;
-    i: integer;
-  begin
-    clear();
-    drawHoleGraph();
-    fromNode := inputBox('Grapher', 'Введите имя начальной вершины', '');
-    toNode := inputBox('Grapher', 'Введите имя конечной вершины', '');
-    if (not (isNameExist(fromNode) and isNameExist(toNode))) then begin
-      showMessage('Вершины не найдены!');
-    end else begin
-      prepareToSearch(fromNode);
-      shortestWaySearch(getNodeByName(fromNode));
-      brightThisNode(getNodeByName(fromNode), clRed);
-      brightThisNode(getNodeByName(toNode), clRed);
-      if (getNodeByName(toNode)^.distance >= 1.7E37) then showMessage('Пути от ' + fromNode + ' до ' + toNode + ' не существует') else
-        showMessage('Кратчайший путь от ' + fromNode + ' до ' + toNode + ' равен ' + floattostr(getNodeByName(toNode)^.distance));
-    end;
   end;
 
 procedure TmainForm.nodesSearchButtonClick(Sender: TObject);

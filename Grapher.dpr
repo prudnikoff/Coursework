@@ -2,8 +2,8 @@ program Grapher;
 
 uses
   Forms,
-  Unit1 in 'Unit1.pas' {mainForm},
-  Unit2 in 'Unit2.pas';
+  MainUnit in 'MainUnit.pas' {mainForm},
+  MathUnit in 'MathUnit.pas';
 
 {$R *.res}
 

@@ -3,7 +3,7 @@ object mainForm: TmainForm
   Top = -8
   BiDiMode = bdLeftToRight
   BorderStyle = bsSingle
-  Caption = 'mainForm'
+  Caption = 'Grapher'
   ClientHeight = 705
   ClientWidth = 1366
   Color = clSkyBlue
@@ -201,8 +201,8 @@ object mainForm: TmainForm
     Height = 49
     ItemIndex = 1
     Items.Strings = (
-      #1042#1079#1074#1077#1096#1072#1085#1085#1099#1081
-      #1053#1077#1074#1079#1074#1077#1096#1072#1085#1085#1099#1081)
+      #1042#1079#1074#1077#1096#1077#1085#1085#1099#1081
+      #1053#1077#1074#1079#1074#1077#1096#1077#1085#1085#1099#1081)
     TabOrder = 6
   end
   object namingRadioGroup: TRadioGroup
@@ -258,14 +258,18 @@ object mainForm: TmainForm
     Top = 544
     Width = 145
     Height = 21
+    DropDownCount = 5
     ItemHeight = 13
     TabOrder = 11
     Text = #1042#1099#1073#1088#1072#1090#1100
     Items.Strings = (
+      #1050#1088#1072#1090#1095#1072#1081#1096#1080#1081' '#1087#1091#1090#1100
       #1057#1090#1077#1087#1077#1085#1080' '#1074#1077#1088#1096#1080#1085
       #1055#1086#1088#1103#1076#1086#1082' '#1075#1088#1072#1092#1072
       #1056#1072#1079#1084#1077#1088' '#1075#1088#1072#1092#1072
-      #1042#1088#1077#1084#1103' '#1087#1086#1083#1085#1086#1075#1086' '#1086#1073#1093#1086#1076#1072)
+      #1042#1088#1077#1084#1103' '#1087#1086#1083#1085#1086#1075#1086' '#1086#1073#1093#1086#1076#1072
+      #1062#1077#1085#1090#1088#1072#1083#1100#1085#1072#1103' '#1074#1077#1088#1096#1080#1085#1072
+      #1056#1072#1076#1080#1091#1089' '#1075#1088#1072#1092#1072)
   end
   object countButton: TButton
     Left = 1240
@@ -276,22 +280,13 @@ object mainForm: TmainForm
     TabOrder = 12
     OnClick = countButtonClick
   end
-  object shortestWayButton: TButton
-    Left = 1040
-    Top = 648
-    Width = 145
-    Height = 25
-    Caption = #1055#1086#1080#1089#1082' '#1082#1088#1072#1090#1095#1072#1081#1096#1077#1075#1086' '#1087#1091#1090#1080
-    TabOrder = 13
-    OnClick = shortestWayButtonClick
-  end
   object nodesSearchButton: TButton
-    Left = 1208
+    Left = 1136
     Top = 648
-    Width = 145
+    Width = 129
     Height = 25
     Caption = #1055#1086#1080#1089#1082' '#1074#1077#1088#1096#1080#1085#1099
-    TabOrder = 14
+    TabOrder = 13
     OnClick = nodesSearchButtonClick
   end
   object backgroundColorBox: TColorBox
@@ -303,7 +298,7 @@ object mainForm: TmainForm
     NoneColorColor = clCream
     Selected = clCream
     ItemHeight = 16
-    TabOrder = 15
+    TabOrder = 14
     OnChange = backgroundColorBoxChange
   end
   object openDialog: TOpenDialog
